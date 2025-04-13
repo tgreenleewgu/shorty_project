@@ -9,3 +9,4 @@ def get_mongodb_connection():
 def get_urls_collection():
     db = get_mongodb_connection()
     return db.urls
+

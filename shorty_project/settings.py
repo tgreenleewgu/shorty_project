@@ -133,6 +133,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:19006",  # Expo web port
     "http://localhost:19000",  # Expo dev tools
+    "http://localhost:8081",  # React Native packager (if used)
 ]
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -153,3 +154,10 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'url_shortener.authentication.SupabaseAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+}

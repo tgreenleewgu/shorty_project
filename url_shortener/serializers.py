@@ -3,7 +3,8 @@ from rest_framework import serializers
 class URLShortenerSerializer(serializers.Serializer):
     original_url = serializers.URLField(required=True)
     custom_code = serializers.CharField(required=False, allow_blank=True, max_length=20)
-    
+    email = serializers.EmailField(required=True)
+
     def validate_original_url(self, value):
         if not value.startswith(('http://', 'https://')):
             raise serializers.ValidationError("URL must start with http:// or https://")
