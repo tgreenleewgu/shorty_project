@@ -172,5 +172,65 @@ class URLStatsView(APIView):
             'clicks': url_document['clicks']
         })
     
+# class UserAnalyticsView(APIView):
+#     authentication_classes = [SupabaseAuthentication]
+#     permission_classes = [AllowAny]  # or IsAuthenticated if you require authentication
 
+#     def get(self, request):
+#         # Ensure request.user exists and contains email
+#         user = request.user
+#         if not user or not getattr(user, 'email', None):
+#             return Response({'error': 'User email not found or user is not authenticated.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+#         email = user.email
+
+#         # Debugging: log the email for verification
+#         print(f"User email: {email}")
+
+#         try:
+#             urls_collection = get_urls_collection()
+#             urls = list(urls_collection.find({'email': email}, {'_id': 0, 'original_url': 1, 'short_code': 1, 'clicks': 1}))
+
+#             if not urls:
+#                 return Response({'error': 'No URLs found for the user.'}, status=status.HTTP_404_NOT_FOUND)
+
+#             return Response(urls, status=status.HTTP_200_OK)
+        
+#         except Exception as e:
+#             # Log the error for debugging purposes
+#             print(f"Error fetching user analytics: {e}")
+#             return Response({'error': 'Internal Server Error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#####working but for all URLS#####
+# class UserAnalyticsView(APIView):
+#     authentication_classes = []  # Disable authentication
+#     permission_classes = [AllowAny]  # Allow any user, no auth required
+
+#     def get(self, request):
+#         # You can temporarily skip the user check to confirm the functionality
+#         urls_collection = get_urls_collection()
+#         urls = list(urls_collection.find({}, {'_id': 0, 'original_url': 1, 'short_code': 1, 'clicks': 1}))
+        
+#         return Response(urls, status=status.HTTP_200_OK)
+
+
+class UserAnalyticsView(APIView):
+    authentication_classes = []  # Keep authentication disabled for now
+    permission_classes = [AllowAny]  # Allow any user, no auth required
+
+    def get(self, request):
+        # Get the email from the request parameters
+        email = request.query_params.get('email')
+        
+        if not email:
+            return Response({"error": "Email parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Filter URLs by email
+        urls_collection = get_urls_collection()
+        urls = list(urls_collection.find(
+            {'email': email},  # Filter by email
+            {'_id': 0, 'original_url': 1, 'short_code': 1, 'clicks': 1}
+        ))
+        
+        return Response(urls, status=status.HTTP_200_OK)
 
