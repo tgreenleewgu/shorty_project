@@ -201,17 +201,7 @@ class URLStatsView(APIView):
 #             print(f"Error fetching user analytics: {e}")
 #             return Response({'error': 'Internal Server Error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-#####working but for all URLS#####
-# class UserAnalyticsView(APIView):
-#     authentication_classes = []  # Disable authentication
-#     permission_classes = [AllowAny]  # Allow any user, no auth required
 
-#     def get(self, request):
-#         # You can temporarily skip the user check to confirm the functionality
-#         urls_collection = get_urls_collection()
-#         urls = list(urls_collection.find({}, {'_id': 0, 'original_url': 1, 'short_code': 1, 'clicks': 1}))
-        
-#         return Response(urls, status=status.HTTP_200_OK)
 
 
 class UserAnalyticsView(APIView):
@@ -233,4 +223,45 @@ class UserAnalyticsView(APIView):
         ))
         
         return Response(urls, status=status.HTTP_200_OK)
+    
 
+######### validation for delete URL ###########
+# class DeleteURLView(APIView):
+#     authentication_classes = [SupabaseAuthentication]
+#     permission_classes = [AllowAny]  # Swap to IsAuthenticated once auth is fully working
+
+#     def delete(self, request, short_code):
+#         user = request.user
+
+#         # Basic validation
+#         if not user or not getattr(user, 'email', None):
+#             return Response({"error": "Unauthorized. Email not found in token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+#         email = user.email
+#         urls_collection = get_urls_collection()
+
+#         # Try to delete only URLs that belong to the user
+#         result = urls_collection.delete_one({
+#             'short_code': short_code,
+#             'email': email
+#         })
+
+#         if result.deleted_count == 0:
+#             return Response({"error": "URL not found or you don't have permission to delete this."}, status=status.HTTP_404_NOT_FOUND)
+
+#         return Response({"message": "URL deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+
+class DeleteURLView(APIView):
+    authentication_classes = []  # ✅ Disable auth for now
+    permission_classes = [AllowAny]  # ✅ Allow all users
+
+    def delete(self, request, short_code):
+        urls_collection = get_urls_collection()
+
+        result = urls_collection.delete_one({'short_code': short_code})
+
+        if result.deleted_count == 0:
+            return Response({'error': 'URL not found'}, status=404)
+
+        return Response({'message': 'URL deleted successfully'}, status=200)
