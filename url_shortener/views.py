@@ -98,7 +98,7 @@ class ShortenURLView(APIView):
             email = serializer.validated_data['email']  # Now coming from the user
             email = serializer.validated_data.get('email')
 
-            # Rest of your code remains the same...
+            
             urls_collection = get_urls_collection()
             
             if custom_code:
