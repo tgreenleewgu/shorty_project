@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.shortcuts import redirect
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -17,7 +17,10 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import BaseAuthentication
 
+def home(request):
+    print("logging home view", request.user.username,request.user.email)
 
+    return HttpResponse("Hello, world. You're at the polls index.")
 
 @csrf_exempt
 def update_user_profile(request):
