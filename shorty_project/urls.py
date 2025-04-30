@@ -16,10 +16,15 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+from url_shortener.views import GitHubLogin, GithubConnect
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('url_shortener.urls')),
     path('accounts/', include('allauth.urls')),
+    path('dj-rest-auth/', include('dj_rest_auth.urls')),
+    path('dj-rest-auth/github/', GitHubLogin.as_view(), name='github_login'),
+    path('dj-rest-auth/github/connect/', GithubConnect.as_view(), name='github_connect'),
     
 ]

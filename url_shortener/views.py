@@ -4,6 +4,8 @@ from django.http import Http404, HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+
+from shorty_project.settings import LOGIN_REDIRECT_URL
 from .mongodb import get_urls_collection
 from .utils import generate_short_code, generate_unique_id
 from .serializers import URLShortenerSerializer
@@ -16,6 +18,23 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import BaseAuthentication
+
+from allauth.socialaccount.providers.github.views import GitHubOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from dj_rest_auth.registration.views import SocialLoginView
+from allauth.socialaccount.providers.github.views import GitHubOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from dj_rest_auth.registration.views import SocialConnectView
+
+class GitHubLogin(SocialLoginView):
+    adapter_class = GitHubOAuth2Adapter
+    callback_url = LOGIN_REDIRECT_URL
+    client_class = OAuth2Client
+
+class GithubConnect(SocialConnectView):
+    adapter_class = GitHubOAuth2Adapter
+    callback_url = LOGIN_REDIRECT_URL
+    client_class = OAuth2Client
 
 def home(request):
     print("logging home view", request.user.username,request.user.email)
