@@ -46,13 +46,11 @@ INSTALLED_APPS = [
     'allauth.account',
     'rest_framework.authtoken',
     'dj_rest_auth',
-
-    # Optional -- requires install using `django-allauth[socialaccount]`.
-    'allauth.socialaccount',
-    # ... include the providers you want to enable:
-    
-    'allauth.socialaccount.providers.github',
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.github",
+    'allauth.socialaccount.providers.google',
 ]
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -141,10 +139,15 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:19006",  # Expo web port
     "http://localhost:19000",  # Expo dev tools
     "http://localhost:8081",  # React Native packager (if used)
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8081",
 ]
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -195,14 +198,43 @@ AUTHENTICATION_BACKENDS = [
 # Provider specific settings
 SOCIALACCOUNT_PROVIDERS = {
     'github': {
-        # For each OAuth based provider, either add a ``SocialApp``
-        # (``socialaccount`` app) containing the required client
-        # credentials, or list them here:
         'APP': {
             'client_id': os.environ.get("GITHUB_CLIENT_ID"),
             'secret': os.environ.get("GITHUB_CLIENT_SECRET"),
-            'key': ''
+        },
+        'SCOPE': ['user:email'],
+        'AUTH_PARAMS': {
+            'prompt': 'consent',
         }
+    },
+    'google': {
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
     }
 }
-LOGIN_REDIRECT_URL = '/'  
+
+ACCOUNT_USER_MODEL_USERNAME_FIELD = 'username'
+ACCOUNT_USERNAME_REQUIRED = True
+
+ACCOUNT_SIGNUP_FIELDS = {
+    'username': {'required': True}
+}
+
+ACCOUNT_LOGIN_METHODS = {
+    'username': {
+        'enabled': True,
+        'verification': None
+    }
+}
+
+
+# LOGIN_REDIRECT_URL = '/'  
+LOGIN_REDIRECT_URL = 'http://localhost:8081/'
+
+SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_AUTO_SIGNUP = True
+ACCOUNT_UNIQUE_EMAIL = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
+SOCIALACCOUNT_QUERY_EMAIL = True

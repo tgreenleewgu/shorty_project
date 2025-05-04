@@ -1,9 +1,13 @@
 from rest_framework import serializers
 
+# class URLShortenerSerializer(serializers.Serializer):
+#     original_url = serializers.URLField(required=True)
+#     custom_code = serializers.CharField(required=False, allow_blank=True, max_length=20)
+#     email = serializers.EmailField(required=True)
 class URLShortenerSerializer(serializers.Serializer):
     original_url = serializers.URLField(required=True)
     custom_code = serializers.CharField(required=False, allow_blank=True, max_length=20)
-    email = serializers.EmailField(required=True)
+    username = serializers.CharField(required=True)
 
     def validate_original_url(self, value):
         if not value.startswith(('http://', 'https://')):
@@ -18,3 +22,6 @@ class URLShortenerSerializer(serializers.Serializer):
 
 class URLRedirectSerializer(serializers.Serializer):
     short_code = serializers.CharField(required=True)
+
+class UserInfoSerializer(serializers.Serializer):
+     username = serializers.CharField()

@@ -36,24 +36,60 @@ class GithubConnect(SocialConnectView):
     callback_url = LOGIN_REDIRECT_URL
     client_class = OAuth2Client
 
+from rest_framework.decorators import api_view, permission_classes
+from .serializers import UserInfoSerializer
+from rest_framework.permissions import IsAuthenticated
+
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.utils.decorators import method_decorator
+from rest_framework.permissions import AllowAny
+
+
+@method_decorator(ensure_csrf_cookie, name='dispatch')
+class EnsureCSRFCookieView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({"message": "CSRF cookie set"})
+
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def user_info(request):
+    return Response({
+        "username": request.user.username  
+    })
+from django.contrib.auth import logout
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+def logout_view(request):
+    logout(request)
+    return JsonResponse({"message": "Logged out"})
+from django.http import HttpResponse
+from django.utils.decorators import method_decorator
+
+
 def home(request):
-    print("logging home view", request.user.username,request.user.email)
+    print("logging home view", request.user.username)
 
     return HttpResponse("Hello, world. You're at the polls index.")
 
 @csrf_exempt
 def update_user_profile(request):
     if request.method == 'POST':
-        email = request.POST.get('email')  # Email from the request
+        username = request.POST.get('username')  # username from the request
         user_id = request.user.id  # Assuming you have user authentication in place
 
-        if not email:
-            return JsonResponse({'error': 'Email is required'}, status=400)
+        if not username:
+            return JsonResponse({'error': 'username is required'}, status=400)
 
         # MongoDB query to find and update the user profile
         result = get_urls_collection().update_one(
             {'_id': user_id},  # Assuming user_id is stored in _id field
-            {'$set': {'email': email}}  # Update email field
+            {'$set': {'username': username}}  # Update username field
         )
 
         if result.matched_count == 0:
@@ -84,12 +120,12 @@ class SupabaseAuthentication(BaseAuthentication):
             
             # Extract user info from the token
             user_id = payload.get('sub')
-            email = payload.get('email')
+            username = payload.get('username')
             
             # Create a simple user object
             user = type('SupabaseUser', (), {
                 'id': user_id,
-                'email': email,
+                'username': username,
                 'is_authenticated': True
             })
             
@@ -99,30 +135,96 @@ class SupabaseAuthentication(BaseAuthentication):
 
 # Update your view to use the authentication
 from rest_framework.permissions import AllowAny
+# class ShortenURLView(APIView):
+#     authentication_classes = [SupabaseAuthentication]
+#     # permission_classes = [IsAuthenticated]
+#     permission_classes = [AllowAny]
+#     def post(self, request, format=None):
+#         # Add username from authenticated user to the request data
+#         data = request.data.copy()
+        
+#         # If the user is authenticated and has an username attribute
+#         if hasattr(request.user, 'username') and request.user.username:
+#             data['username'] = request.user.username
+        
+#         # Validate the data with the serializer
+#         serializer = URLShortenerSerializer(data=data)
+        
+#         if serializer.is_valid():
+#             original_url = serializer.validated_data['original_url']
+#             custom_code = serializer.validated_data.get('custom_code', '')
+#             username = serializer.validated_data['username']  # Now coming from the user
+#             username = serializer.validated_data.get('username')
+
+            
+#             urls_collection = get_urls_collection()
+            
+#             if custom_code:
+#                 existing_url = urls_collection.find_one({'short_code': custom_code})
+#                 if existing_url:
+#                     return Response({'error': 'Custom code already in use'}, status=status.HTTP_400_BAD_REQUEST)
+#                 short_code = custom_code
+#             else:
+#                 while True:
+#                     short_code = generate_short_code()
+#                     existing_url = urls_collection.find_one({'short_code': short_code})
+#                     if not existing_url:
+#                         break
+#             if hasattr(request.user, 'username') and request.user.username:
+#                 data['username'] = request.user.username
+
+#             url_document = {
+#             '_id': generate_unique_id(),
+#             'original_url': original_url,
+#             'short_code': short_code,
+#             'created_at': generate_unique_id().split('-')[0],
+#             'clicks': 0,
+#             'username': data['username'],
+#         }
+
+
+#             # url_document = {
+#             #     '_id': generate_unique_id(),
+#             #     'original_url': original_url,
+#             #     'short_code': short_code,
+#             #     'created_at': generate_unique_id().split('-')[0],
+#             #     'clicks': 0,
+#             #     'username': username,
+                
+#             # }
+            
+#             urls_collection.insert_one(url_document)
+            
+#             base_url = request.build_absolute_uri('/').rstrip('/')
+#             shortened_url = f"{base_url}/s/{short_code}"
+            
+#             return Response({
+#                 'original_url': original_url,
+#                 'short_code': short_code,
+#                 'shortened_url': shortened_url,
+#                 'username': username
+#             }, status=status.HTTP_201_CREATED)
+        
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class ShortenURLView(APIView):
-    authentication_classes = [SupabaseAuthentication]
-    # permission_classes = [IsAuthenticated]
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]  # Ensure user is authenticated via Django session
+
     def post(self, request, format=None):
-        # Add email from authenticated user to the request data
         data = request.data.copy()
-        
-        # If the user is authenticated and has an email attribute
-        if hasattr(request.user, 'email') and request.user.email:
-            data['email'] = request.user.email
-        
-        # Validate the data with the serializer
+        if hasattr(request.user, 'username') and request.user.username:
+            data['username'] = request.user.username
+        else:
+            return Response({'error': 'Username not found in request'}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = URLShortenerSerializer(data=data)
-        
         if serializer.is_valid():
             original_url = serializer.validated_data['original_url']
             custom_code = serializer.validated_data.get('custom_code', '')
-            email = serializer.validated_data['email']  # Now coming from the user
-            email = serializer.validated_data.get('email')
+            username = serializer.validated_data['username']
 
-            
             urls_collection = get_urls_collection()
-            
+
             if custom_code:
                 existing_url = urls_collection.find_one({'short_code': custom_code})
                 if existing_url:
@@ -131,33 +233,40 @@ class ShortenURLView(APIView):
             else:
                 while True:
                     short_code = generate_short_code()
-                    existing_url = urls_collection.find_one({'short_code': short_code})
-                    if not existing_url:
+                    if not urls_collection.find_one({'short_code': short_code}):
                         break
-            
+
             url_document = {
                 '_id': generate_unique_id(),
                 'original_url': original_url,
                 'short_code': short_code,
                 'created_at': generate_unique_id().split('-')[0],
                 'clicks': 0,
-                'email': email,
-                
+                'username': username,
             }
-            
+
             urls_collection.insert_one(url_document)
-            
+
             base_url = request.build_absolute_uri('/').rstrip('/')
             shortened_url = f"{base_url}/s/{short_code}"
-            
+
             return Response({
                 'original_url': original_url,
                 'short_code': short_code,
                 'shortened_url': shortened_url,
-                'email': email
+                'username': username
             }, status=status.HTTP_201_CREATED)
-        
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@method_decorator(ensure_csrf_cookie, name='dispatch')
+class EnsureCSRFCookieView(APIView):
+    permission_classes = []
+
+    def get(self, request):
+        return Response({'message': 'CSRF cookie set'})
+
 
 class RedirectURLView(APIView):
     """API view for redirecting shortened URLs"""
@@ -199,19 +308,19 @@ class URLStatsView(APIView):
 #     permission_classes = [AllowAny]  # or IsAuthenticated if you require authentication
 
 #     def get(self, request):
-#         # Ensure request.user exists and contains email
+#         # Ensure request.user exists and contains username
 #         user = request.user
-#         if not user or not getattr(user, 'email', None):
-#             return Response({'error': 'User email not found or user is not authenticated.'}, status=status.HTTP_400_BAD_REQUEST)
+#         if not user or not getattr(user, 'username', None):
+#             return Response({'error': 'User username not found or user is not authenticated.'}, status=status.HTTP_400_BAD_REQUEST)
         
-#         email = user.email
+#         username = user.username
 
-#         # Debugging: log the email for verification
-#         print(f"User email: {email}")
+#         # Debugging: log the username for verification
+#         print(f"User username: {username}")
 
 #         try:
 #             urls_collection = get_urls_collection()
-#             urls = list(urls_collection.find({'email': email}, {'_id': 0, 'original_url': 1, 'short_code': 1, 'clicks': 1}))
+#             urls = list(urls_collection.find({'username': username}, {'_id': 0, 'original_url': 1, 'short_code': 1, 'clicks': 1}))
 
 #             if not urls:
 #                 return Response({'error': 'No URLs found for the user.'}, status=status.HTTP_404_NOT_FOUND)
@@ -227,24 +336,20 @@ class URLStatsView(APIView):
 
 
 class UserAnalyticsView(APIView):
-    authentication_classes = []  # Keep authentication disabled for now
-    permission_classes = [AllowAny]  # Allow any user, no auth required
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # Get the email from the request parameters
-        email = request.query_params.get('email')
-        
-        if not email:
-            return Response({"error": "Email parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Filter URLs by email
+        username = request.user.username
+        if not username:
+            return Response({"error": "Username not found"}, status=400)
+
         urls_collection = get_urls_collection()
         urls = list(urls_collection.find(
-            {'email': email},  # Filter by email
+            {'username': username},
             {'_id': 0, 'original_url': 1, 'short_code': 1, 'clicks': 1}
         ))
-        
-        return Response(urls, status=status.HTTP_200_OK)
+
+        return Response(urls, status=200)
     
 
 ######### validation for delete URL ###########
@@ -256,16 +361,16 @@ class UserAnalyticsView(APIView):
 #         user = request.user
 
 #         # Basic validation
-#         if not user or not getattr(user, 'email', None):
-#             return Response({"error": "Unauthorized. Email not found in token."}, status=status.HTTP_401_UNAUTHORIZED)
+#         if not user or not getattr(user, 'username', None):
+#             return Response({"error": "Unauthorized. username not found in token."}, status=status.HTTP_401_UNAUTHORIZED)
 
-#         email = user.email
+#         username = user.username
 #         urls_collection = get_urls_collection()
 
 #         # Try to delete only URLs that belong to the user
 #         result = urls_collection.delete_one({
 #             'short_code': short_code,
-#             'email': email
+#             'username': username
 #         })
 
 #         if result.deleted_count == 0:
@@ -275,15 +380,20 @@ class UserAnalyticsView(APIView):
 
 
 class DeleteURLView(APIView):
-    authentication_classes = []  # ✅ Disable auth for now
-    permission_classes = [AllowAny]  # ✅ Allow all users
+    permission_classes = [IsAuthenticated]
 
     def delete(self, request, short_code):
-        urls_collection = get_urls_collection()
+        username = request.user.username
+        if not username:
+            return Response({"error": "Unauthorized"}, status=401)
 
-        result = urls_collection.delete_one({'short_code': short_code})
+        urls_collection = get_urls_collection()
+        result = urls_collection.delete_one({
+            'short_code': short_code,
+            'username': username
+        })
 
         if result.deleted_count == 0:
-            return Response({'error': 'URL not found'}, status=404)
+            return Response({'error': 'URL not found or not owned by you'}, status=404)
 
         return Response({'message': 'URL deleted successfully'}, status=200)
