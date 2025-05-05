@@ -1,4 +1,8 @@
 from django.apps import AppConfig
+import sys
+
+
+
 
 
 class UrlShortenerConfig(AppConfig):
@@ -7,3 +11,11 @@ class UrlShortenerConfig(AppConfig):
 
     def ready(self):
         import url_shortener.signals
+
+    from django.apps import AppConfig
+
+class UrlShortenerConfig(AppConfig):
+    name = 'url_shortener'
+
+    def ready(self):
+        from . import signals

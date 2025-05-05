@@ -45,6 +45,13 @@ from django.utils.decorators import method_decorator
 from rest_framework.permissions import AllowAny
 
 
+
+def get_current_user(request):
+    username = request.session.get("username", "not-in-session")
+    print("[/api/me/] Session username:", username)
+    return JsonResponse({"username": username})
+
+
 @method_decorator(ensure_csrf_cookie, name='dispatch')
 class EnsureCSRFCookieView(APIView):
     permission_classes = [AllowAny]

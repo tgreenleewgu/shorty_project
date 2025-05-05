@@ -9,7 +9,7 @@ urlpatterns = [
     path('api/analytics/', views.UserAnalyticsView.as_view(), name='user-analytics'),
     path('api/analytics/<str:short_code>/', views.DeleteURLView.as_view(), name='delete-url'),
     path("", views.home, name='home'),
-    path("api/me/", views.user_info, name="user_info"),
+    path("api/me/", views.user_info, name="get_current_user"),
     path("api/logout/", views.logout_view),
     
 ]

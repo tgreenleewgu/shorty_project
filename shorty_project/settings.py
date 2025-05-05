@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'url_shortener',
+    # 'url_shortener',
     'rest_framework',
     'corsheaders',
     'allauth',
@@ -49,7 +49,10 @@ INSTALLED_APPS = [
     "allauth.socialaccount",
     "allauth.socialaccount.providers.github",
     'allauth.socialaccount.providers.google',
+    'url_shortener.apps.UrlShortenerConfig',
 ]
+
+
 
 
 MIDDLEWARE = [
@@ -144,6 +147,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:19006",  # Expo web port
     "http://localhost:19000",  # Expo dev tools
     "http://localhost:8081",  # React Native packager (if used)
+    "http://localhost:3000",  # React app port
+    "http://localhost:8000",  # Django app port
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -214,11 +219,11 @@ SOCIALACCOUNT_PROVIDERS = {
 }
 
 ACCOUNT_USER_MODEL_USERNAME_FIELD = 'username'
-ACCOUNT_USERNAME_REQUIRED = True
+# ACCOUNT_USERNAME_REQUIRED = True
 
-ACCOUNT_SIGNUP_FIELDS = {
-    'username': {'required': True}
-}
+# ACCOUNT_SIGNUP_FIELDS = {
+#     'username': {'required': True}
+# }
 
 ACCOUNT_LOGIN_METHODS = {
     'username': {
