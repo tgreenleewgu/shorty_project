@@ -1,5 +1,6 @@
 from django.urls import path
 from url_shortener import views
+from .views import get_csrf_token
 
 urlpatterns = [
     path('api/shorten/', views.ShortenURLView.as_view(), name='shorten_url'),
@@ -11,5 +12,6 @@ urlpatterns = [
     path("", views.home, name='home'),
     path("api/me/", views.user_info, name="get_current_user"),
     path("api/logout/", views.logout_view),
+    path('api/csrf/', get_csrf_token),
     
 ]
