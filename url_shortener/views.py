@@ -1,49 +1,38 @@
-from django.shortcuts import render
+from .mongodb import get_urls_collection
+from .serializers import URLShortenerSerializer, UserInfoSerializer
+from .utils import generate_short_code, generate_unique_id
+
+from allauth.socialaccount.providers.github.views import GitHubOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from dj_rest_auth.registration.views import SocialLoginView, SocialConnectView
+
+from datetime import datetime, timezone
+
+from django.contrib.auth import logout
+from django.http import JsonResponse, Http404, HttpResponse
 from django.shortcuts import redirect
-from django.http import Http404, HttpResponse
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+
 from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from shorty_project.settings import LOGIN_REDIRECT_URL
-from .mongodb import get_urls_collection
-from .utils import generate_short_code, generate_unique_id
-from .serializers import URLShortenerSerializer
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import jwt
-from django.http import JsonResponse
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.authentication import BaseAuthentication
 
-from allauth.socialaccount.providers.github.views import GitHubOAuth2Adapter
-from allauth.socialaccount.providers.oauth2.client import OAuth2Client
-from dj_rest_auth.registration.views import SocialLoginView
-from allauth.socialaccount.providers.github.views import GitHubOAuth2Adapter
-from allauth.socialaccount.providers.oauth2.client import OAuth2Client
-from dj_rest_auth.registration.views import SocialConnectView
 
 class GitHubLogin(SocialLoginView):
     adapter_class = GitHubOAuth2Adapter
     callback_url = LOGIN_REDIRECT_URL
     client_class = OAuth2Client
 
+
 class GithubConnect(SocialConnectView):
     adapter_class = GitHubOAuth2Adapter
     callback_url = LOGIN_REDIRECT_URL
     client_class = OAuth2Client
-
-from rest_framework.decorators import api_view, permission_classes
-from .serializers import UserInfoSerializer
-from rest_framework.permissions import IsAuthenticated
-
-from django.views.decorators.csrf import ensure_csrf_cookie
-from django.utils.decorators import method_decorator
-from rest_framework.permissions import AllowAny
-
 
 
 def get_current_user(request):
@@ -58,52 +47,44 @@ class EnsureCSRFCookieView(APIView):
 
     def get(self, request):
         return Response({"message": "CSRF cookie set"})
-from django.views.decorators.csrf import ensure_csrf_cookie
-from django.http import JsonResponse
+
 
 @ensure_csrf_cookie
 def get_csrf_token(request):
     return JsonResponse({'message': 'CSRF cookie set'})
 
 
-
-
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def user_info(request):
     return Response({
-        "username": request.user.username  
+        "username": request.user.username
     })
-from django.contrib.auth import logout
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+
 
 @csrf_exempt
 def logout_view(request):
     logout(request)
     return JsonResponse({"message": "Logged out"})
-from django.http import HttpResponse
-from django.utils.decorators import method_decorator
 
 
 def home(request):
     print("logging home view", request.user.username)
-
     return HttpResponse("Hello, world. You're at the polls index.")
+
 
 @csrf_exempt
 def update_user_profile(request):
     if request.method == 'POST':
-        username = request.POST.get('username') 
-        user_id = request.user.id  
+        username = request.POST.get('username')
+        user_id = request.user.id
 
         if not username:
             return JsonResponse({'error': 'username is required'}, status=400)
 
-        # MongoDB query to find and update the user profile
         result = get_urls_collection().update_one(
-            {'_id': user_id},  
-            {'$set': {'username': username}}  
+            {'_id': user_id},
+            {'$set': {'username': username}}
         )
 
         if result.matched_count == 0:
@@ -113,9 +94,9 @@ def update_user_profile(request):
 
     return JsonResponse({'error': 'Invalid request method!'}, status=400)
 
-import datetime
+
 class ShortenURLView(APIView):
-    permission_classes = [IsAuthenticated]  
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, format=None):
         data = request.data.copy()
@@ -167,57 +148,37 @@ class ShortenURLView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@method_decorator(ensure_csrf_cookie, name='dispatch')
-class EnsureCSRFCookieView(APIView):
-    permission_classes = []
-
-    def get(self, request):
-        return Response({'message': 'CSRF cookie set'})
-
-
 class RedirectURLView(APIView):
-    """API view for redirecting shortened URLs"""
-    
     def get(self, request, short_code, format=None):
         urls_collection = get_urls_collection()
         url_document = urls_collection.find_one({'short_code': short_code})
-        
+
         if not url_document:
             raise Http404("Short URL not found")
-        
-        # Increment the click counter
+
         urls_collection.update_one(
             {'_id': url_document['_id']},
             {'$inc': {'clicks': 1}}
         )
-        
+
         return redirect(url_document['original_url'])
 
+
 class URLStatsView(APIView):
-    """API view for getting URL statistics"""
-    
     def get(self, request, short_code, format=None):
         urls_collection = get_urls_collection()
         url_document = urls_collection.find_one({'short_code': short_code})
-        
+
         if not url_document:
             raise Http404("Short URL not found")
-        
+
         return Response({
             'original_url': url_document['original_url'],
             'short_code': url_document['short_code'],
             'created_at': url_document['created_at'],
             'clicks': url_document['clicks']
         })
-    
 
-
-
-from datetime import datetime, timezone
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from .mongodb import get_urls_collection  
 
 class UserAnalyticsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -231,36 +192,21 @@ class UserAnalyticsView(APIView):
         urls = list(urls_collection.find(
             {'username': username},
             {'_id': 0, 'original_url': 1, 'short_code': 1, 'clicks': 1, 'created_at': 1}
-    ))
-
-        
+        ))
 
         for url in urls:
             raw_created = url.get('created_at')
             try:
-                # If it's a datetime, keep as is. If it's a string, parse it.
                 if isinstance(raw_created, datetime):
                     parsed = raw_created
                 else:
                     parsed = datetime.fromisoformat(str(raw_created))
-
                 url['created_at'] = parsed.isoformat()
             except Exception:
-                url['created_at'] = None  # If parsing fails
+                url['created_at'] = None
 
         return Response(urls, status=200)
 
-
-
-
-
-
-
-
-
-
-    
-    
 
 class DeleteURLView(APIView):
     permission_classes = [IsAuthenticated]
