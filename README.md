@@ -12,7 +12,7 @@ This guide walks you through setting up and maintaining the **ShortyURL** backen
 
 ### 1. Clone the Repository
 ```bash
-git clone https://gitlab.com/your-username/shortyurl.git
+git clone https://github.com/tgreenleewgu/shorty_project.git
 cd shortyurl
 ```
 
