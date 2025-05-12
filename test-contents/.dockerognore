@@ -1,0 +1,13 @@
+.venv/
+venv/
+shorty_env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+.env
+.git/
+.gitignore
+*.log
