@@ -2,6 +2,14 @@ from pathlib import Path
 from decouple import config
 import os
 
+
+MONGODB_URI = config('MONGODB_URI')
+GITHUB_CLIENT_ID = config('GITHUB_CLIENT_ID')
+GITHUB_CLIENT_SECRET = config('GITHUB_CLIENT_SECRET')
+SECRET_KEY = config('SECRET_KEY')
+ENVIRONMENT = config('DJANGO_ENV', default='development')
+
+
 # Base directory of the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -18,6 +26,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'rest_framework',
     'corsheaders',
     'allauth',
@@ -29,6 +38,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'url_shortener.apps.UrlShortenerConfig',
 ]
+
+SITE_ID = 1
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -124,6 +135,11 @@ SOCIALACCOUNT_PROVIDERS = {
         'AUTH_PARAMS': {'prompt': 'consent'}
     },
     'google': {
+        'APP': {
+            'client_id': os.environ.get("GOOGLE_CLIENT_ID"),
+            'secret': os.environ.get("GOOGLE_CLIENT_SECRET"),
+            'key': ''
+        },
         "SCOPE": ["profile", "email"],
         "AUTH_PARAMS": {"access_type": "online"},
     }
@@ -149,12 +165,52 @@ SOCIALACCOUNT_QUERY_EMAIL = True
 CORS_ALLOW_CREDENTIALS = True
 
 if ENVIRONMENT == "production":
-    ALLOWED_HOSTS = ['www.getshortylinks.com', 'getshortylinks.com']
-    CORS_ALLOWED_ORIGINS = ['https://www.getshortylinks.com']
-    CSRF_TRUSTED_ORIGINS = ['https://www.getshortylinks.com']
+    ALLOWED_HOSTS = [
+        '54.237.91.6',
+        'www.getshortylinks.com',
+        'getshortylinks.com',
+        'api.getshortylinks.com',
+	'127.0.0.1',
+    ]
+    CORS_ALLOWED_ORIGINS = [
+        'https://www.getshortylinks.com',
+        'https://getshortylinks.com',
+    ]
+    CORS_ALLOW_CREDENTIALS = True  
+
+    CSRF_TRUSTED_ORIGINS = [
+        'https://www.getshortylinks.com',
+        'https://getshortylinks.com',
+        'https://api.getshortylinks.com',
+    ]
     LOGIN_REDIRECT_URL = 'https://www.getshortylinks.com/'
-else:
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-    CORS_ALLOWED_ORIGINS = ['http://localhost:8081']
-    CSRF_TRUSTED_ORIGINS = ['http://localhost:8081']
-    LOGIN_REDIRECT_URL = 'http://localhost:8081/'
+    ACCOUNT_LOGOUT_REDIRECT_URL = 'https://www.getshortylinks.com/'
+
+    # Cookie settings
+    SESSION_COOKIE_DOMAIN = ".getshortylinks.com"
+    CSRF_COOKIE_DOMAIN = ".getshortylinks.com"
+    SESSION_COOKIE_SAMESITE = "None"
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+
+print(f"ENVIRONMENT={ENVIRONMENT}, DEBUG={DEBUG}")
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': '/tmp/django_debug.log',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'DEBUG',
+    },
+}
+

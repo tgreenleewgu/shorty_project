@@ -3,6 +3,7 @@ from .serializers import URLShortenerSerializer, UserInfoSerializer
 from .utils import generate_short_code, generate_unique_id
 
 from allauth.socialaccount.providers.github.views import GitHubOAuth2Adapter
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView, SocialConnectView
 
@@ -21,6 +22,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from shorty_project.settings import LOGIN_REDIRECT_URL
+from django.conf import settings
+
 
 
 class GitHubLogin(SocialLoginView):
@@ -35,9 +38,18 @@ class GithubConnect(SocialConnectView):
     client_class = OAuth2Client
 
 
+class GoogleLogin(SocialLoginView):
+    adapter_class = GoogleOAuth2Adapter
+    callback_url = settings.LOGIN_REDIRECT_URL
+    client_class = OAuth2Client
+
+class GoogleConnect(SocialConnectView):
+    adapter_class = GoogleOAuth2Adapter
+    callback_url = settings.LOGIN_REDIRECT_URL
+    client_class = OAuth2Client
+
 def get_current_user(request):
     username = request.session.get("username", "not-in-session")
-    print("[/api/me/] Session username:", username)
     return JsonResponse({"username": username})
 
 
